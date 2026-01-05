@@ -5,7 +5,6 @@ import { UserRepository } from "../repositories/user.repository";
 export class UserService {
   private repo = new UserRepository();
 
-  // REGISTER USER
   async register(email: string, password: string, role: string = "user") {
     const existing = await this.repo.findByEmail(email);
     if (existing) throw new Error("Email already exists");
@@ -19,7 +18,7 @@ export class UserService {
     });
   }
 
-  // LOGIN USER
+  
   async login(email: string, password: string) {
     const user = await this.repo.findByEmail(email);
     if (!user) throw new Error("Invalid credentials");
