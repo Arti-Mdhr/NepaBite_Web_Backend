@@ -1,10 +1,12 @@
-export type UserRole = "user" | "admin";
+import z from "zod";
 
-export interface IUser {
-  _id?: string;
-  email: string;
-  password: string;
-  role: UserRole;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+export const UserSchema = z.object({
+    username: z.string().min(1),
+    email: z.email(),
+    password: z.string().min(6),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    role: z.enum(["user", "admin"]).default("user"),
+});
+
+export type UserType = z.infer<typeof UserSchema>;
