@@ -1,37 +1,65 @@
+import UserModel from "../models/user.model"; // your mongoose User model
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { UserRepository } from "../repositories/user.repository";
+
+const JWT_SECRET = process.env.JWT_SECRET || "secret"; // put in .env
 
 export class UserService {
-  private repo = new UserRepository();
+  // REGISTER USER
+  async register(email: string, password: string) {
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      const error: any = new Error("User already exists");
+      error.statusCode = 400;
+      throw error;
+    }
 
-  async register(email: string, password: string, role: string = "user") {
-    const existing = await this.repo.findByEmail(email);
-    if (existing) throw new Error("Email already exists");
-
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    return this.repo.createUser({
+    // Create user
+    const newUser = await UserModel.create({
       email,
       password: hashedPassword,
-      role,
+      role: "user", // default role
     });
+
+    // Return user data without password
+    const { _id, role } = newUser;
+    return { _id, email, role };
   }
 
-  
+  // LOGIN USER
   async login(email: string, password: string) {
-    const user = await this.repo.findByEmail(email);
-    if (!user) throw new Error("Invalid credentials");
+    // Find user
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      const error: any = new Error("Invalid email or password");
+      error.statusCode = 401;
+      throw error;
+    }
 
+    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new Error("Invalid credentials");
+    if (!isMatch) {
+      const error: any = new Error("Invalid email or password");
+      error.statusCode = 401;
+      throw error;
+    }
 
+    // Generate token
     const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: "1d" }
+      { id: user._id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "7d" }
     );
 
-    return { token };
+    // Return user data and token
+    const { _id, role } = user;
+    return {
+      user: { _id, email: user.email, role },
+      token,
+    };
   }
 }
