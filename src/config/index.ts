@@ -4,7 +4,7 @@ dotenv.config();
 export const PORT: number = 
     process.env.PORT ? parseInt(process.env.PORT) : 3000;
 export const MONGODB_URI: string = 
-    process.env.MONGODB_URI || 'mongodb://localhost:5000/nepabite';
+    process.env.MONGODB_URl|| 'mongodb://localhost:5000/nepabite';
 // Application level constants, with fallbacks 
 // if .env variables are not set
 

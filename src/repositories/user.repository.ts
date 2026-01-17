@@ -1,13 +1,44 @@
-import { UserModel } from "../models/user.model";
+import { UserModel, IUser } from "../models/user.model";
 
-export class UserRepository {
-  // Find a user by email
-  async findByEmail(email: string) {
-    return UserModel.findOne({ email });
-  }
 
-  // Create a new user
-  async createUser(data: { email: string; password: string; role?: string }) {
-    return UserModel.create(data);
-  }
+export interface UserRepositoryInterface {
+    getAllUsers(skip?: number, limit?: number): Promise<IUser[]>;
+    getUserById(userId: string): Promise<IUser | null>;
+    getUserWithPassword(userId: string): Promise<IUser | null>;
+    getUserByEmail(email: string): Promise<IUser | null>;
+    createUser(user: Partial<IUser>): Promise<IUser>;
+    updateUser(userId: string, updatedData: Partial<IUser>): Promise<IUser | null>;
+    deleteUser(userId: string): Promise<IUser | null>;
+}
+
+export class UserRepository implements UserRepositoryInterface {
+
+    async getUserByEmail(email: string): Promise<IUser | null> {
+        return UserModel.findOne({ email }).exec();
+    }
+    async getAllUsers(skip: number = 0, limit: number = 10) {
+        return UserModel.find().skip(skip).limit(limit).exec();
+    }
+
+    async getUserById(userId: string) {
+        return UserModel.findById(userId).exec();
+    }
+
+    async getUserWithPassword(userId: string) {
+        return UserModel.findById(userId).select("+password").exec();
+    }
+
+
+    async createUser(user: Partial<IUser>) {
+        const newUser = new UserModel(user);
+        return newUser.save();
+    }
+
+    async updateUser(userId: string, updatedData: Partial<IUser>) {
+        return UserModel.findByIdAndUpdate(userId, updatedData, { new: true }).exec();
+    }
+
+    async deleteUser(userId: string) {
+        return UserModel.findByIdAndDelete(userId).exec();
+    }
 }
