@@ -23,6 +23,8 @@ export class UserService {
     // create user  [for registration]
 
     async createUser(data: RegisterUserDTO) {
+        console.log("Creating user with data:", data);
+
         const existingUser = await userRepository.getUserByEmail(
             data.email,
         

@@ -6,6 +6,7 @@ const userService = new UserService();
 
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
+    console.log("Register user request body:", req.body);
     try {
       const registerDetailsParsed = RegisterUserDTO.safeParse(req.body);
 
