@@ -57,7 +57,7 @@ export class UserController {
     } catch (error: any) {
       return res
         .status(500)
-        .json({ success: true, message: error.message || "User Login Failed" });
+        .json({ success: false, message: error.message || "User Login Failed" });
     }
   };
 

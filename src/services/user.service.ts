@@ -11,9 +11,7 @@ dotenv.config();
 
 export class UserService {
 
-//    helper function: Filter user object to exclude password and the version key that mongoose creates
 
-    // doing this because we dont want password going everywhere
     private sanitizeUser(user: IUser) {
         const userObj = user.toObject();
         const { password, __v, ...safeUser } = userObj; // here __v is version key [mongoose generates it automatically]
