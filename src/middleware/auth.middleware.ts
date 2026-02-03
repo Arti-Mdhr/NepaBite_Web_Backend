@@ -19,7 +19,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
   const token = authHeader.split(" ")[1];
 
-  // ✅ Support BOTH env names so you don't break other projects
+  // Support BOTH env names so you don't break other projects
   const secret = process.env.JWT_SECRET_TOKEN || process.env.JWT_SECRET;
 
   if (!secret) {

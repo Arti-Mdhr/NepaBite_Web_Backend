@@ -1,135 +1,154 @@
-import bcrypt from 'bcrypt';
+import bcrypt from "bcrypt";
 
 import { RegisterUserDTO, LoginUserDTO, EditUserDTO } from "../dtos/user.dto";
 import { IUser } from "../models/user.model";
-import jwt from 'jsonwebtoken';
-import dotenv from "dotenv"
-import { UserRepository, UserRepositoryInterface } from '../repositories/user.repository';
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+import {
+  UserRepository,
+  UserRepositoryInterface,
+} from "../repositories/user.repository";
 
 const userRepository: UserRepositoryInterface = new UserRepository();
 dotenv.config();
 
 export class UserService {
+  private sanitizeUser(user: IUser) {
+    const userObj = user.toObject();
+    const { password, __v, ...safeUser } = userObj; // here __v is version key [mongoose generates it automatically]
+    return safeUser;
+  }
 
+  // create user  [for registration]
 
-    private sanitizeUser(user: IUser) {
-        const userObj = user.toObject();
-        const { password, __v, ...safeUser } = userObj; // here __v is version key [mongoose generates it automatically]
-        return safeUser;
+  async createUser(data: RegisterUserDTO) {
+    console.log("Creating user with data:", data);
+
+    const existingUser = await userRepository.getUserByEmail(data.email);
+
+    if (existingUser) {
+      throw new Error("User with this email or username already exists");
     }
 
-    // create user  [for registration]
+    // Hash password for security reasons
+    const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    async createUser(data: RegisterUserDTO) {
-        console.log("Creating user with data:", data);
+    const userToCreate = {
+      fullName: data.fullName,
+      email: data.email.toLowerCase(),
+      password: hashedPassword,
+      phoneNumber: data.phoneNumber,
+      address: data.address,
+    };
 
-        const existingUser = await userRepository.getUserByEmail(
-            data.email,
-        
-        );
+    const user = await userRepository.createUser(userToCreate);
+    return this.sanitizeUser(user);
+  }
 
-        if (existingUser) {
-            throw new Error("User with this email or username already exists");
-        }
+  //  login function [jwt token is created here and not in controller because its easier that way]
 
-        // Hash password for security reasons
-        const hashedPassword = await bcrypt.hash(data.password, 10);
+  async loginUser(email: string, password: string) {
+    const user = await userRepository.getUserByEmail(email);
 
-        const userToCreate = {
-            fullName: data.fullName,
-            email: data.email.toLowerCase(),
-            password: hashedPassword,
-            phoneNumber: data.phoneNumber,
-            address: data.address,
-        };
-
-        const user = await userRepository.createUser(userToCreate);
-        return this.sanitizeUser(user);
+    if (!user) {
+      throw new Error("Invalid credentials");
     }
 
-    //  login function [jwt token is created here and not in controller because its easier that way]
-
-    async loginUser(email: string, password: string) {
-        const user = await userRepository.getUserByEmail(email);
-
-        if (!user) {
-            throw new Error("Invalid credentials");
-        }
-
-        // Because password has select:false [done in model || cant access directly], we must explicitly select it
-        const userWithPassword = await userRepository.getUserWithPassword(user._id.toString());
-        if (!userWithPassword) {
-            throw new Error("Authentication failed");
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-            password,
-            userWithPassword.password
-        );
-
-        if (!isPasswordValid) {
-            throw new Error("Invalid credentials");
-        }
-
-        // token geneation after login
-        const token = jwt.sign( 
-            {
-                id: user._id.toString(), // .toString() done because JWT payload should be JSON-serializable
-                role: user.role
-            },
-            process.env.JWT_SECRET!,
-            { expiresIn: "1h" }
-        );
-
-        const safeUser = this.sanitizeUser(user);
-
-        return { token, user: safeUser };
+    // Because password has select:false [done in model || cant access directly], we must explicitly select it
+    const userWithPassword = await userRepository.getUserWithPassword(
+      user._id.toString(),
+    );
+    if (!userWithPassword) {
+      throw new Error("Authentication failed");
     }
 
-    // update user logic
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      userWithPassword.password,
+    );
 
-    async updateUser(userId: string, data: EditUserDTO) {
-        const user = await userRepository.getUserById(userId);
-        if (!user) throw new Error("User not found");
-
-        // Prevent email / username collisions
-        if (data.email) {
-            const existingUser = await userRepository.getUserByEmail(
-                data.email ?? ""
-            );
-
-            if (existingUser && existingUser._id.toString() !== userId) {
-                throw new Error("Email or username already in use");
-            }
-        }
-
-        const updatedUser = await userRepository.updateUser(userId, data);
-        if (!updatedUser) throw new Error("Failed to update user");
-
-        return this.sanitizeUser(updatedUser);
+    if (!isPasswordValid) {
+      throw new Error("Invalid credentials");
     }
 
-    //  Below functions alll are used for "get" operations, basically get from db and show type shi
+    // token geneation after login
+    const token = jwt.sign(
+      {
+        id: user._id.toString(), // .toString() done because JWT payload should be JSON-serializable
+        role: user.role,
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: "1h" },
+    );
 
-    async getAllUsers(page: number = 1, limit: number = 10) {
-        const skip = (page - 1) * limit;
-        const users = await userRepository.getAllUsers(skip, limit);
-        return users.map(user => this.sanitizeUser(user));
+    const safeUser = this.sanitizeUser(user);
+
+    return { token, user: safeUser };
+  }
+
+  // update user logic
+
+  async updateUser(userId: string, data: EditUserDTO) {
+    const user = await userRepository.getUserById(userId);
+    if (!user) throw new Error("User not found");
+
+   
+    // Prevent email / username collisions
+    if (data.email) {
+      const existingUser = await userRepository.getUserByEmail(
+        data.email ?? "",
+      );
+
+      if (existingUser && existingUser._id.toString() !== userId) {
+        throw new Error("Email or username already in use");
+      }
     }
 
-    async getUserById(userId: string) {
-        const user = await userRepository.getUserById(userId);
-        if (!user) throw new Error("User not found");
-        return this.sanitizeUser(user);
-    }
+    const updatedUser = await userRepository.updateUser(userId, data);
+    if (!updatedUser) throw new Error("Failed to update user");
 
-    // Delete user logic 
+    return this.sanitizeUser(updatedUser);
+  }
 
-    async deleteUser(userId: string) {
-        const user = await userRepository.getUserById(userId);
-        if (!user) throw new Error("User not found");
+  //  Below functions alll are used for "get" operations, basically get from db and show type shi
 
-        await userRepository.deleteUser(userId);
-        return { message: "User deleted successfully" };
-    }
+  async getAllUsers(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const users = await userRepository.getAllUsers(skip, limit);
+    return users.map((user) => this.sanitizeUser(user));
+  }
+
+  async getUserById(userId: string) {
+    const user = await userRepository.getUserById(userId);
+    if (!user) throw new Error("User not found");
+    return this.sanitizeUser(user);
+  }
+
+  // Delete user logic
+
+  async deleteUser(userId: string) {
+    const user = await userRepository.getUserById(userId);
+    if (!user) throw new Error("User not found");
+
+    await userRepository.deleteUser(userId);
+    return { message: "User deleted successfully" };
+  }
+
+  // ✅ ADMIN create user
+  async adminCreateUser(data: any) {
+    const existing = await userRepository.getUserByEmail(data.email);
+    if (existing) throw new Error("Email already exists");
+
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
+    const user = await userRepository.createUser({
+      fullName: data.name || data.fullName,
+      email: data.email,
+      password: hashedPassword,
+      role: data.role || "user",
+      image: data.image,
+    });
+
+    return this.sanitizeUser(user);
+  }
 }

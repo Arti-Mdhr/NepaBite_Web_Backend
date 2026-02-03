@@ -7,7 +7,7 @@ export interface IUser extends Document {
     phoneNumber?: string;
     address?: string;
     role: "user" | "admin";
-    
+    image?: string;
 }
 
 const UserSchema: Schema<IUser> = new mongoose.Schema(
@@ -17,7 +17,8 @@ const UserSchema: Schema<IUser> = new mongoose.Schema(
         password: { type: String, required: true, select:false },
         phoneNumber: { type: String },
         address: { type: String },
-        role: { type: String, enum:["user", "admin"], default:"user"},  
+        role: { type: String, enum:["user", "admin"], default:"user"},
+        image: { type: String },
     },
     { timestamps: true }
 );

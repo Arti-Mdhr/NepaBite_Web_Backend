@@ -28,5 +28,18 @@ export const EditUserDTO = UserSchema.pick({
     email: true,
     phoneNumber: true,
     address: true,
+    image: true,
 }).partial(); // doesnt ask user to insert all field when editing
 export type EditUserDTO= z.infer<typeof EditUserDTO>
+
+export const AdminEditUserDTO = UserSchema.pick({
+  fullName: true,
+  email: true,
+  phoneNumber: true,
+  address: true,
+  role: true, // ✅ allow role ONLY for admin update
+  image: true,
+}).partial();
+
+
+export type AdminEditUserDTO = z.infer<typeof AdminEditUserDTO>;
