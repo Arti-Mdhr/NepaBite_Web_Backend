@@ -326,6 +326,33 @@ export class UserController {
     }
   };
 
+  updateProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+
+    const updateData: any = {};
+
+    if (req.body.fullName) updateData.fullName = req.body.fullName;
+    if (req.body.name) updateData.fullName = req.body.name;
+    if (req.body.email) updateData.email = req.body.email;
+    if (req.body.password?.trim()) updateData.password = req.body.password.trim();
+    if (req.file) updateData.image = `/uploads/users/${req.file.filename}`;
+
+    const updated = await userService.updateUser(userId, updateData);
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updated,
+    });
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Update failed",
+    });
+  }
+};
+
   // ==============================
   // RESET PASSWORD
   // ==============================

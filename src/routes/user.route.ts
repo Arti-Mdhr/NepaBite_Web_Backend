@@ -18,7 +18,6 @@ router.post("/login", (req, res) => controller.loginUser(req, res));
 router.get("/profile", authMiddleware, (req, res) => controller.getProfile(req, res));
 
 
-
 // ...
 router.post(
   "/profile/image",
@@ -26,6 +25,8 @@ router.post(
   uploadUserImage.single("image"),
   (req, res) => controller.uploadProfileImage(req, res)
 );
+
+router.put("/profile", authMiddleware, uploadUserImage.single("image"), (req, res) => controller.updateProfile(req, res));
 
 // Route to save a recipe to the user's profile
 router.post("/save-recipe", authMiddleware, (req, res) => savedRecipesController.saveRecipe(req, res));
