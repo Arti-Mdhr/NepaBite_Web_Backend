@@ -1,26 +1,80 @@
+
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IUser extends Document {
-    fullName: string;
-    email: string;
-    password: string;
-    phoneNumber?: string;
-    address?: string;
-    role: "user" | "admin";
-    image?: string;
+  fullName: string;
+  email: string;
+  password: string;
+  phoneNumber?: string;
+  address?: string;
+  role: "user" | "admin";
+  image?: string;
+  savedRecipes: mongoose.Types.ObjectId[];
+
+  // password reset fields
+  resetToken?: string;
+  resetTokenExpiry?: Date;
 }
 
 const UserSchema: Schema<IUser> = new mongoose.Schema(
-    {
-        fullName: { type: String, required: true },
-        email: { type: String, required: true, unique: true, lowercase:true, index:true },
-        password: { type: String, required: true, select:false },
-        phoneNumber: { type: String },
-        address: { type: String },
-        role: { type: String, enum:["user", "admin"], default:"user"},
-        image: { type: String },
+  {
+    fullName: {
+      type: String,
+      required: true,
     },
-    { timestamps: true }
+
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      index: true,
+    },
+
+    password: {
+      type: String,
+      required: true,
+      select: false,
+    },
+
+    phoneNumber: {
+      type: String,
+    },
+
+    address: {
+      type: String,
+    },
+
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+
+    image: {
+      type: String,
+    },
+
+    savedRecipes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Recipe",
+      },
+    ],
+
+    // reset password fields
+    resetToken: {
+      type: String,
+    },
+
+    resetTokenExpiry: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+  }
 );
 
 export const UserModel = mongoose.model<IUser>("User", UserSchema);
+
