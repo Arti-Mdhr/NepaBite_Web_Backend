@@ -11,6 +11,8 @@ export const UserSchema = z.object({
     address: z.string().optional(),
     role: z.enum(["user", "admin"]).default("user"),
     image: z.string().optional(),
+     savedRecipes: z.array(z.string()).optional(),
+    
 });
 
 export type User = z.infer<typeof UserSchema>;
